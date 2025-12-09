@@ -126,7 +126,7 @@
         }
 
         function saveIfAuto() {
-            const auto = document.getElementById('autoSave')?.checked ?? true;
+            const auto = document.getElementById('autoSave')?.checked ?? false;
             if (auto) saveToLocalStorage();
         }
 
@@ -225,34 +225,7 @@
             }
         });
 
-        (function attachStorageControls() {
-            const controlsHtml = `
-                <div class="mb-6 flex items-center gap-3">
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="checkbox" id="autoSave" checked class="form-checkbox">
-                        <span>Lưu tự động vào localStorage</span>
-                    </label>
-                    <button id="saveToLSBtn" class="bg-blue-400 hover:bg-blue-500 text-white font-semibold px-4 py-1 rounded">Lưu ngay</button>
-                    <button id="loadFromLSBtn" class="bg-green-400 hover:bg-green-500 text-white font-semibold px-4 py-1 rounded">Tải</button>
-                    <button id="clearLSBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-1 rounded">Xóa lưu</button>
-                </div>
-            `;
-            const formContainer = document.querySelector('.mb-8.bg-gray-50.p-6.rounded-lg');
-            if (formContainer) formContainer.insertAdjacentHTML('beforeend', controlsHtml);
-
-            document.getElementById('saveToLSBtn').addEventListener('click', function() {
-                saveToLocalStorage();
-                alert('Đã lưu dữ liệu vào localStorage.');
-            });
-
-            document.getElementById('loadFromLSBtn').addEventListener('click', function() {
-                loadFromLocalStorage();
-            });
-
-            document.getElementById('clearLSBtn').addEventListener('click', function() {
-                clearLocalStorage();
-            });
-        })();
+        
 
         if (localStorage.getItem('products')) {
             loadFromLocalStorage();
