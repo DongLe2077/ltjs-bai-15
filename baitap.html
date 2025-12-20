@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRUD DOM - json-server</title>
+    <title>CRUD DOM</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
-        <h1 class="text-3xl font-bold text-center text-blue-400 mb-8">Bài Tập CRUD DOM: Quản Lý Sản Phẩm (json-server)</h1>
+        <h1 class="text-3xl font-bold text-center text-blue-400 mb-8">Bài Tập CRUD DOM: Quản Lý Sản Phẩm</h1>
         
         <!-- Form Thêm Sản Phẩm -->
         <div class="mb-8 bg-gray-50 p-6 rounded-lg">
@@ -35,140 +35,133 @@
                     </tr>
                 </thead>
                 <tbody id="productList">
-                    <!-- rows rendered from json-server -->
+                    <!-- Sản phẩm sẽ được thêm vào đây -->
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3000/posts';
+        let currentId = 4; // ID kế tiếp
+        let editingRow = null; // Lưu dòng đang được sửa
 
-        // Lấy dữ liệu từ server và render
-        async function fetchAndRender() {
-            try {
-                const res = await fetch(API_BASE);
-                const data = await res.json();
-                const productList = document.getElementById('productList');
-                productList.innerHTML = '';
-                data.forEach(renderProductRow);
-            } catch (err) {
-                console.error('Lỗi khi lấy dữ liệu:', err);
-                alert('Không thể kết nối tới server. Hãy chắc json-server đang chạy.');
+        // Hàm thêm sản phẩm
+        function addProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const price = document.getElementById('productPrice').value.trim();
+            if (!name || !price) {
+                alert('Vui lòng nhập đầy đủ thông tin!');
+                return;
             }
-        }
-
-        function formatPrice(num) {
-            return Number(num).toLocaleString('vi-VN');
-        }
-
-        function renderProductRow(product) {
             const productList = document.getElementById('productList');
-            const tr = document.createElement('tr');
-            tr.className = 'border-b hover:bg-gray-50';
-            tr.dataset.id = product.id;
-            tr.innerHTML = `
-                <td class="p-3">${product.id}</td>
-                <td class="p-3">${product.name}</td>
-                <td class="p-3">${formatPrice(product.price)}</td>
+            const newRow = document.createElement('tr');
+            newRow.className = 'border-b hover:bg-gray-50';
+            newRow.innerHTML = `
+                <td class="p-3">${currentId}</td>
+                <td class="p-3">${name}</td>
+                <td class="p-3">${price}</td>
                 <td class="p-3">
                     <button class="updateBtn bg-yellow-400 hover:bg-yellow-500 text-white font-semibold px-4 py-1 rounded mr-2">Sửa</button>
                     <button class="deleteBtn bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-1 rounded">Xóa</button>
                 </td>
             `;
-            productList.appendChild(tr);
+            productList.appendChild(newRow);
+            currentId++;
+            // Gửi dữ liệu lên Google Sheet
+            sendToGoogleSheet(name, price);
+            // Xóa form
+            document.getElementById('productName').value = '';
+            document.getElementById('productPrice').value = '';
         }
 
-        // Thêm sản phẩm (POST)
-        async function addProduct() {
-            const nameEl = document.getElementById('productName');
-            const priceEl = document.getElementById('productPrice');
-            const name = nameEl.value.trim();
-            const price = priceEl.value.trim();
-
-            if (!name || !price) { alert('Vui lòng nhập đầy đủ thông tin!'); return; }
-
-            try {
-                const res = await fetch(API_BASE, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, price: Number(price) })
-                });
-                const created = await res.json();
-                renderProductRow(created);
-                nameEl.value = '';
-                priceEl.value = '';
-            } catch (err) {
-                console.error('Lỗi khi thêm:', err);
-                alert('Thêm sản phẩm thất bại. Kiểm tra server.');
-            }
-        }
-
-        // Xóa sản phẩm (DELETE)
-        async function deleteProduct(event) {
-            const row = event.target.closest('tr');
-            const id = row.dataset.id;
-            if (!id) return;
-            if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
-            try {
-                await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-                row.remove();
-            } catch (err) {
-                console.error('Lỗi khi xóa:', err);
-                alert('Xóa thất bại. Kiểm tra server.');
-            }
-        }
-
-        // Sửa sản phẩm (PUT)
-        async function updateProduct(event) {
-            const btn = event.target;
-            const row = btn.closest('tr');
-            const id = row.dataset.id;
-            const cells = row.cells;
-
-            // Nếu đang ở chế độ edit (button text là 'Lưu')
-            if (btn.textContent === 'Lưu') {
-                const nameInput = cells[1].querySelector('input');
-                const priceInput = cells[2].querySelector('input');
-                const newName = nameInput.value.trim();
-                const newPrice = priceInput.value.trim();
-                if (!newName || !newPrice) { alert('Vui lòng nhập đầy đủ thông tin!'); return; }
-                try {
-                    const res = await fetch(`${API_BASE}/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: Number(id), name: newName, price: Number(newPrice) })
-                    });
-                    const updated = await res.json();
-                    cells[1].textContent = updated.name;
-                    cells[2].textContent = formatPrice(updated.price);
-                    btn.textContent = 'Sửa';
-                    btn.classList.remove('bg-green-500','hover:bg-green-600');
-                    btn.classList.add('bg-yellow-400','hover:bg-yellow-500');
-                } catch (err) {
-                    console.error('Lỗi khi cập nhật:', err);
-                    alert('Cập nhật thất bại. Kiểm tra server.');
+        // Hàm gửi dữ liệu lên Google Sheet
+        function sendToGoogleSheet(tenSanPham, giaSanPham) {
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyqqJl2G69tlGiPOaueYLUi7wHrstfLYiFeEiCWTanXncGTTrWv8h2Uf4HyVwYBqDTQ/exec';
+            
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ tenSanPham, giaSanPham }),
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-            } else {
-                // Chuyển sang chế độ edit
+            })
+            .then(() => {
+                console.log('Đã gửi dữ liệu lên Google Sheet');
+                alert('Đã lưu sản phẩm lên Google Sheet!');
+            })
+            .catch(error => {
+                console.error('Lỗi gửi lên Google Sheet:', error);
+                alert('Lỗi gửi lên Google Sheet: ' + error);
+            });
+        }
+
+        // Hàm xóa sản phẩm
+        function deleteProduct(event) {
+            const row = event.target.closest('tr');
+            if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+                row.remove();
+            }
+        }
+
+        // Hàm sửa sản phẩm
+        function updateProduct(event) {
+            const row = event.target.closest('tr');
+            const cells = row.cells;
+            
+            if (editingRow && editingRow !== row) {
+                alert('Vui lòng hoàn tất chỉnh sửa sản phẩm hiện tại trước!');
+                return;
+            }
+            
+            if (!editingRow) {
+                // Chế độ chỉnh sửa
                 const name = cells[1].textContent;
-                const price = cells[2].textContent.replace(/\./g, '').trim();
+                const price = cells[2].textContent;
+                
                 cells[1].innerHTML = `<input type="text" value="${name}" class="w-full p-1 border rounded">`;
                 cells[2].innerHTML = `<input type="text" value="${price}" class="w-full p-1 border rounded">`;
-                btn.textContent = 'Lưu';
-                btn.classList.remove('bg-yellow-400','hover:bg-yellow-500');
-                btn.classList.add('bg-green-500','hover:bg-green-600');
+                
+                event.target.textContent = 'Lưu';
+                event.target.classList.remove('bg-yellow-400', 'hover:bg-yellow-500');
+                event.target.classList.add('bg-green-500', 'hover:bg-green-600');
+                
+                editingRow = row;
+            } else {
+                // Lưu chỉnh sửa
+                const nameInput = cells[1].querySelector('input');
+                const priceInput = cells[2].querySelector('input');
+                
+                const newName = nameInput.value.trim();
+                const newPrice = priceInput.value.trim();
+                
+                if (!newName || !newPrice) {
+                    alert('Vui lòng nhập đầy đủ thông tin!');
+                    return;
+                }
+                
+                cells[1].textContent = newName;
+                cells[2].textContent = newPrice;
+                
+                event.target.textContent = 'Sửa';
+                event.target.classList.remove('bg-green-500', 'hover:bg-green-600');
+                event.target.classList.add('bg-yellow-400', 'hover:bg-yellow-500');
+                
+                editingRow = null;
             }
         }
 
+        // Event Listeners
         document.getElementById('addBtn').addEventListener('click', addProduct);
+        
+        // Event delegation cho các nút Sửa và Xóa
         document.getElementById('productList').addEventListener('click', function(event) {
-            if (event.target.classList.contains('deleteBtn')) deleteProduct(event);
-            else if (event.target.classList.contains('updateBtn')) updateProduct(event);
+            if (event.target.classList.contains('deleteBtn')) {
+                deleteProduct(event);
+            } else if (event.target.classList.contains('updateBtn')) {
+                updateProduct(event);
+            }
         });
-
-        // Load dữ liệu ban đầu
-        document.addEventListener('DOMContentLoaded', fetchAndRender);
     </script>
 </body>
 </html>
